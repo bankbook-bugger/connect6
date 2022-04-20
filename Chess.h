@@ -7,6 +7,7 @@
 #define OTHER 3
 
 #define MAX 32767
+#define MAX_DEPTH 2
 struct loc
 {
 public:
@@ -19,11 +20,6 @@ public:
 		return false;
 	}
 };//位置信息
-//struct extend
-//{
-//	struct loc location;
-//	bool flag;
-//};//搜索队列的信息
 class Chess
 {
 public:
@@ -36,6 +32,9 @@ public:
 	void oppoplay();
 	bool isEnd();
 	void showWhoWin();
+	void hashKey();
+	bool hashCheck();
+	void hashUpdate(int value);
 	void set(loc location);
 	void add(loc location, std::vector<loc>& lastAdd);
 	void swap();
@@ -51,12 +50,17 @@ public:
 	//查找搜索队列中是否包含指定值
 	bool contain(std::vector<loc>, loc);
 private:
-	int m_chess[19][19];
-	int m_player;
-	int m_step;
-	int m_win;
-	loc m_last;
-	loc m_llast;
-	std::pair< loc, loc>m_best;
-	std::vector< loc>search;
+	int m_chess[19][19];//棋盘
+	int m_player;//当前走棋方
+	int m_step;//走两次落点中的第几步
+	int m_win;//谁赢
+	int m_zobrist_HashKey32[2][19][19];//使用zobrist技术生成某种棋下在棋盘上某点的特定索引
+	long m_zobrist_HashKey64[2][19][19];//特定检验码
+	int m_HashKey32;//保存当前局面的索引
+	long m_HashKey64;//保存当前局面的校验码
+	int m_depth;//记录当前节点的绝对深度
+	loc m_last;//
+	loc m_llast;//记录上两次落子点
+	std::pair< loc, loc>m_best;//最好的着法
+	std::vector< loc>search;//搜索队列
 };

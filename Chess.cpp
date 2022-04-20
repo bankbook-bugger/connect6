@@ -3,6 +3,9 @@
 #include<string>
 #include<algorithm>
 #include<iomanip>
+#include<climits>
+#include<stdlib.h>
+#include<random>
 using std::cin;     using std::pair;
 using std::cout;    using std::endl;
 using std::vector;  using std::string;
@@ -10,11 +13,20 @@ int numberOfBlackRoad[7]{ 0 };
 int numberOfWhiteRoad[7]{ 0 };
 int scoreOfBlackRoad[7]{ 0,1,5,10,25,25,10000 };
 int scoreOfWhiteRoad[7]{ 0,1,10,15,35,25,10000 };
+struct HashItem
+{
+    long check;
+    int depth;
+    int value;
+}*hash[1024 * 1024];
 Chess::Chess()
     :m_chess{ 0 }
     , m_player{ 1 }
     , m_step{ 0 }
     , m_win{ 3 }
+    , m_HashKey32{ 0 }
+    , m_HashKey64{ 0 }
+    ,m_depth{0}
 //{
 //    for(int a=0;a<19;a++)
 //        for (int b = 0; b < 19; b++)
@@ -66,8 +78,22 @@ Chess::Chess()
 //            
 //            }
 //        }
+{
    
-{}
+    std::default_random_engine e(time(0));
+    std::uniform_real_distribution<double> u(0, 1);
+    for (int k = 0; k < 2; k++)
+        for (int i = 0; i < 19; i++)
+            for (int j = 0; j < 19; j++)
+            {
+                m_zobrist_HashKey32[k][i][j] = (int)(u(e) * INT_MAX);
+                //cout << m_zobrist_HashKey32[k][i][j] << endl;
+                m_zobrist_HashKey64[k][i][j] = (long)(u(e) * LONG_MAX);
+                //cout << m_zobrist_HashKey64[k][i][j] << endl;
+            }
+    for (int i = 0; i < 1024 * 1024; i++)
+        hash[i] = nullptr;
+}
 //棋盘绘制
 void Chess::draw()
 {
@@ -290,6 +316,50 @@ void Chess::showWhoWin()
         cout << "\n\t平局";
     }
 }
+//生成当前局面的哈希码
+void Chess::hashKey()
+{
+    int type;
+    for (int i = 0; i < 19; i++)
+        for (int j = 0; j < 19; j++)
+        {
+            if (m_chess[i][j] != 0)
+            {
+                type = m_chess[i][j] % 2;
+                m_HashKey32 = m_HashKey32 ^ m_zobrist_HashKey32[type][i][j];
+                m_HashKey64 = m_HashKey64 ^ m_zobrist_HashKey64[type][i][j];
+            }
+        }
+}
+//查询hash表
+bool Chess::hashCheck()
+{
+    hashKey();
+    int index = m_HashKey32 & 0xFFFFF;
+    if (hash[index] && m_HashKey64 == hash[index]->check && hash[index]->depth >= m_depth - MAX_DEPTH)
+        return true;
+    else
+        return false;
+       
+}
+//更新hash表
+void Chess::hashUpdate(int value)
+{
+    hashKey();
+    int index = m_HashKey32 & 0xFFFFF;
+    if (!hash[index])
+    {
+        hash[index] = new HashItem();
+        hash[index]->check = m_HashKey64;
+        hash[index]->depth = m_depth - MAX_DEPTH;
+        hash[index]->value = value;
+    }
+    else
+    {
+        if(hash[index]->check == m_HashKey64&& hash[index]->depth < m_depth - MAX_DEPTH)
+            hash[index]->value = value;
+    }
+}
 //落子
 void Chess::set(struct loc location)
 {
@@ -363,6 +433,7 @@ void Chess::ourFirstPlay()
     set(location);//落子
     add(location, temp);//扩展搜索队列
     swap();//交换走棋方
+    m_depth++;
 }
 //对方
 void Chess::oppoplay()
@@ -385,18 +456,22 @@ void Chess::oppoplay()
     add(location, temp);
     m_step++;
     if (m_step == 2)
+    {
         swap();
+        m_depth++;
+    }
 }
 //我方
 void Chess::ourplay()
 {
     vector<loc>temp;
-    negamax(2, -MAX, MAX);
+    negamax(MAX_DEPTH, -MAX, MAX);
     set(m_best.first);
     add(m_best.first, temp);
     set(m_best.second);
     add(m_best.second, temp);
     swap();
+    m_depth++;
 }
 void Chess::AnalyHH()
 {
@@ -598,7 +673,7 @@ int Chess::estimate()
     AnalyLL();
     for (int i = 1; i <= 6; i++)
         after += numberOfBlackRoad[i] * scoreOfBlackRoad[i] - numberOfWhiteRoad[i] * scoreOfWhiteRoad[i];
-    cout << after - pre << endl;
+   // cout << after - pre << endl;
     return (after - pre)*pow(-1,type);
 }
 void Chess::retract(loc location)
@@ -621,6 +696,8 @@ int Chess::negamax(int depth, int alpha, int beta)
     vector<pair<loc, loc>>combine;
     vector<loc>temp;
     vector<loc>::iterator it;
+    if (hashCheck())
+        return hash[m_HashKey32]->value;
     if (isEnd())
         return estimate();
     if (depth == 0)
@@ -632,6 +709,7 @@ int Chess::negamax(int depth, int alpha, int beta)
         m_llast = combine[i].second;
         set(combine[i].first);
         set(combine[i].second);
+        m_depth++;
         if (depth != 1)
         {
             add(combine[i].first, temp);
@@ -639,8 +717,10 @@ int Chess::negamax(int depth, int alpha, int beta)
         }
         swap();
         value = -negamax(depth - 1, -beta, -alpha);
+        hashUpdate(value);
         retract(combine[i].first);
         retract(combine[i].second);
+        m_depth--;
         if (!temp.empty()&&depth!=1)
         {
             for (it = temp.begin(); it != temp.end(); ++it)
@@ -650,7 +730,7 @@ int Chess::negamax(int depth, int alpha, int beta)
         if (value > alpha)
         {
             alpha = value;
-            if (depth == 2)
+            if (depth == MAX_DEPTH)
                 m_best = combine[i];
         }
     }
