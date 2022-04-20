@@ -39,8 +39,7 @@ public:
 	void set(loc location);
 	void add(loc location, std::vector<loc>& lastAdd);
 	void swap();
-	int min(int depth, int alpha, int beta);
-	int max(int depth, int alpha, int beta);
+	int negamax(int depth, int alpha, int beta);
 	void retract(loc location);
 	void AnalyHH();
 	void AnalyVV();

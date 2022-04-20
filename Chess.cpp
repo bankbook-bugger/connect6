@@ -6,10 +6,10 @@
 using std::cin;     using std::pair;
 using std::cout;    using std::endl;
 using std::vector;  using std::string;
-int numberOfMyRoad[7]{ 0 };
-int numberOfEnemyRoad[7]{ 0 };
-int scoreOfMyRoad[7]{ 0,1,5,10,25,25,10000 };
-int scoreOfEnemyRoad[7]{ 0,1,10,15,35,25,10000 };
+int numberOfBlackRoad[7]{ 0 };
+int numberOfWhiteRoad[7]{ 0 };
+int scoreOfBlackRoad[7]{ 0,1,5,10,25,25,10000 };
+int scoreOfWhiteRoad[7]{ 0,1,10,15,35,25,10000 };
 Chess::Chess()
     :m_chess{ 0 }
     , m_player{ 1 }
@@ -196,12 +196,6 @@ void Chess::Comb(vector<struct loc>a, vector<pair<loc, loc>>& b, int n)
             }
         }
     }
-    /*  cout << "\n搜索队列：";
-      for (auto e : search)
-          cout << e.x << "," << e.y << "\t";
-      cout << "\n组合：";
-      for (auto e : b)
-          cout << "(" << e.first.x << "," << e.first.y << "  " << e.second.x << "," << e.second.y << ")\t";*/
 }
 //开始
 void Chess::play()
@@ -299,7 +293,6 @@ void Chess::showWhoWin()
 //落子
 void Chess::set(struct loc location)
 {
-    //m_last = location;
     int x = location.x;
     int y = location.y;
     m_chess[x][y] = m_player;
@@ -309,19 +302,15 @@ void Chess::set(struct loc location)
             if (*it == location)
             {
                 search.erase(it);
-                //cout << "\nset 删掉了  " << location.x << "," << location.y;
                 break;
             }
     }
-    // cout << "\n落子在  （" << x << "，" << y << "）\n";
 }
 //扩展搜索队列，返回值是这一步新添的搜索空位
 void Chess::add(struct loc location, vector<loc>& lastAdd)
 {
     int x = location.x;
     int y = location.y;
-    //cout << "\nadd添加的点为：";
-    //vector<struct loc>lastAdd;//这一步添加的搜索队列
     for (int i = -2; i < 3; i++)
     //int i = -2;
     {
@@ -332,7 +321,6 @@ void Chess::add(struct loc location, vector<loc>& lastAdd)
             {
                 search.push_back(temp);
                 lastAdd.push_back(temp);
-                //cout << temp.x << "," << temp.y << "\t";
             }
         }
         if (y + i >= 0 && y + i <= 18)
@@ -342,7 +330,6 @@ void Chess::add(struct loc location, vector<loc>& lastAdd)
             {
                 search.push_back(temp);
                 lastAdd.push_back(temp);
-                //cout << temp.x << "," << temp.y << "\t";
             }
         }
         if (y + i >= 0 && y + i <= 18 && x + i >= 0 && x + i <= 18 && x - i >= 0 && x - i <= 18)
@@ -353,13 +340,11 @@ void Chess::add(struct loc location, vector<loc>& lastAdd)
             {
                 search.push_back(temp1);
                 lastAdd.push_back(temp1);
-                //cout << temp1.x << "," << temp1.y << "\t";
             }
             if (m_chess[x - i][y + i] == 0 && !contain(search, temp2))
             {
                 search.push_back(temp2);
                 lastAdd.push_back(temp2);
-                //cout << temp2.x << "," << temp2.y << "\t";
             }
         }
     }
@@ -377,9 +362,6 @@ void Chess::ourFirstPlay()
     loc location{ 9,9 };
     set(location);//落子
     add(location, temp);//扩展搜索队列
-   /* cout << "\n当前search队列: ";
-    for (auto e : search)
-        cout << e.x << "," << e.y << "\t";*/
     swap();//交换走棋方
 }
 //对方
@@ -403,32 +385,23 @@ void Chess::oppoplay()
     add(location, temp);
     m_step++;
     if (m_step == 2)
-    {
-        /* cout << "\n当前search队列: ";
-         for (auto e : search)
-             cout << e.x << "," << e.y << "\t";*/
         swap();
-    }
 }
 //我方
 void Chess::ourplay()
 {
     vector<loc>temp;
-    max(2, -MAX, MAX);
+    negamax(2, -MAX, MAX);
     set(m_best.first);
     add(m_best.first, temp);
     set(m_best.second);
     add(m_best.second, temp);
-    /* cout << "\n当前search队列: ";
-     for (auto e : search)
-         cout << e.x << "," << e.y << "\t";*/
     swap();
 }
 void Chess::AnalyHH()
 {
     int x1 = m_last.x, y1 = m_last.y;
     int x2 = m_llast.x, y2 = m_llast.y;
-    //cout << "\nheng \n";
     for (int i = y1 - 5 > 0 ? y1 - 5 : 0; i <= y1 && i + 5 < 19; i++)//横向
     {
         int number = 0;
@@ -442,17 +415,10 @@ void Chess::AnalyHH()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
- /*   cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
     for (int i = y2 - 5 > 0 ? y2 - 5 : 0; i <= y2 && i + 5 < 19; i++)//横向
     {
         int number = 0;
@@ -468,23 +434,15 @@ void Chess::AnalyHH()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-  /*  cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
 }
 void Chess::AnalyVV()
 {
     int x1 = m_last.x, y1 = m_last.y;
     int x2 = m_llast.x, y2 = m_llast.y;
-   // cout << "\nshu \n";
     for (int i = x1 - 5 > 0 ? x1 - 5 : 0; i <= x1 && i + 5 < 19; i++)//竖向
     {
         int number = 0;
@@ -498,17 +456,10 @@ void Chess::AnalyVV()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-   /* cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
      for (int i = x2 - 5 > 0 ? x2 - 5 : 0; i <= x2 && i + 5 < 19; i++)//竖向
     {
         int number = 0;
@@ -524,23 +475,15 @@ void Chess::AnalyVV()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-     /*cout << "\nwo \n";
-     for (auto e : numberOfMyRoad)
-         cout << e << "\t";
-     cout << endl;
-     cout << "\ndi \n";
-     for (auto e : numberOfEnemyRoad)
-         cout << e << "\t";*/
 }
 void Chess::AnalyRR()
 {
     int x1 = m_last.x, y1 = m_last.y;
     int x2 = m_llast.x, y2 = m_llast.y;
-   // cout << "\nyouxei \n";
     for (int i = x1 - 5 > 0 ? x1 - 5 : 0, j = y1 - 5 > 0 ? y1 - 5 : 0;
         i <= x1 && i + 5 < 19 && j <= y1 && j + 5 < 19; i++, j++)//左向
     {
@@ -555,17 +498,10 @@ void Chess::AnalyRR()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-   /* cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
     for (int i = x2 - 5 > 0 ? x2 - 5 : 0, j = y2 - 5 > 0 ? y2 - 5 : 0;
         i <= x2 && i + 5 < 19 && j <= y2 && j + 5 < 19; i++, j++)//左向
     {
@@ -582,23 +518,15 @@ void Chess::AnalyRR()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-   /* cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
 }
 void Chess::AnalyLL()
 {
     int x1 = m_last.x, y1 = m_last.y;
     int x2 = m_llast.x, y2 = m_llast.y;
-    //cout << "\nzuo\n";
     for (int i = x1 - 5 > 0 ? x1 - 5 : 0, j = y1 + 5 < 19 ? y1 + 5 : 18;
         i <= x1 && i + 5 < 19 && j >= y1 && j - 5 > 0; i++, j--)//右向
     {
@@ -613,17 +541,10 @@ void Chess::AnalyLL()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-    /*cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
     for (int i = x2 - 5 > 0 ? x2 - 5 : 0, j = y2 + 5 < 19 ? y2 + 5 : 18;
         i <= x2 && i + 5 < 19 && j >= y2 && j - 5 > 0; i++, j--)//右向
     {
@@ -640,17 +561,10 @@ void Chess::AnalyLL()
         if (number == 0 || number > 6 && number % 7 != 0)
             continue;
         if (number < 7)
-            numberOfMyRoad[number]++;
+            numberOfBlackRoad[number]++;
         else
-            numberOfEnemyRoad[number / 7]++;
+            numberOfWhiteRoad[number / 7]++;
     }
-   /* cout << "\nwo \n";
-    for (auto e : numberOfMyRoad)
-        cout << e << "\t";
-    cout << endl;
-    cout << "\ndi \n";
-    for (auto e : numberOfEnemyRoad)
-        cout << e << "\t";*/
 }
 int Chess::estimate()
 {
@@ -662,32 +576,30 @@ int Chess::estimate()
     m_chess[x2][y2] = 0;//清除落子
     for (int i = 0; i < 7; i++)
     {
-        numberOfMyRoad[i] = 0;
-        numberOfEnemyRoad[i] = 0;
+        numberOfBlackRoad[i] = 0;
+        numberOfWhiteRoad[i] = 0;
     }
     AnalyHH();
     AnalyVV();
     AnalyRR();
     AnalyLL();
     for (int i = 1; i <= 6; i++)
-        pre += numberOfMyRoad[i] * scoreOfMyRoad[i] - numberOfEnemyRoad[i] * scoreOfEnemyRoad[i];
-    //cout <<endl<< pre<<endl;
+        pre += numberOfBlackRoad[i] * scoreOfBlackRoad[i] - numberOfWhiteRoad[i] * scoreOfWhiteRoad[i];
     m_chess[x1][y1] = type;
     m_chess[x2][y2] = type;
     for (int i = 0; i < 7; i++)
     {
-        numberOfMyRoad[i] = 0;
-        numberOfEnemyRoad[i] = 0;
+        numberOfBlackRoad[i] = 0;
+        numberOfWhiteRoad[i] = 0;
     }
     AnalyHH();
     AnalyVV();
     AnalyRR();
     AnalyLL();
     for (int i = 1; i <= 6; i++)
-        after += numberOfMyRoad[i] * scoreOfMyRoad[i] - numberOfEnemyRoad[i] * scoreOfEnemyRoad[i];
-   // cout << after<<endl;
-   //cout << after - pre;
-    return after - pre;
+        after += numberOfBlackRoad[i] * scoreOfBlackRoad[i] - numberOfWhiteRoad[i] * scoreOfWhiteRoad[i];
+    cout << after - pre << endl;
+    return (after - pre)*pow(-1,type);
 }
 void Chess::retract(loc location)
 {
@@ -695,7 +607,6 @@ void Chess::retract(loc location)
     int y = location.y;
     m_chess[x][y] = 0;
     search.push_back(location);
-    //cout << "\nretract 添加的：" << location.x<<","<<location.y;
     if (m_step == 0)
     {
         m_step = 2;
@@ -704,10 +615,9 @@ void Chess::retract(loc location)
     m_step--;
 }
 //剪枝
-int Chess::max(int depth, int alpha, int beta)
+int Chess::negamax(int depth, int alpha, int beta)
 {
-    //cout << "\n\nmax";
-    int value;
+    int value=-MAX;
     vector<pair<loc, loc>>combine;
     vector<loc>temp;
     vector<loc>::iterator it;
@@ -716,27 +626,22 @@ int Chess::max(int depth, int alpha, int beta)
     if (depth == 0)
         return estimate();
     Comb(search, combine, search.size());
-     /* cout << "\n搜索队列：";
-      for (auto e : search)
-          cout << e.x << "," << e.y << "\t";
-      cout << "\n组合：\n";
-      for (auto e : combine)
-          cout << "(" << e.first.x << "," << e.first.y << "  " << e.second.x << "," << e.second.y << ")\t";*/
     for (int i = 0; i < combine.size() && alpha < beta; i++)
     {
-        //m_last = combine[i].first;
-        //m_llast = combine[i].second;
-       /* cout << "\nmax  " << combine[i].first.x << "," << combine[i].first.y
-            <<"   " << combine[i].second.x << "," << combine[i].second.y << "\n";*/
+        m_last = combine[i].first;
+        m_llast = combine[i].second;
         set(combine[i].first);
-        add(combine[i].first, temp);
         set(combine[i].second);
-        add(combine[i].second, temp);
+        if (depth != 1)
+        {
+            add(combine[i].first, temp);
+            add(combine[i].second, temp);
+        }
         swap();
-        value = min(depth - 1, alpha, beta);
+        value = -negamax(depth - 1, -beta, -alpha);
         retract(combine[i].first);
         retract(combine[i].second);
-        if (!temp.empty())
+        if (!temp.empty()&&depth!=1)
         {
             for (it = temp.begin(); it != temp.end(); ++it)
                 search.erase(std::remove(search.begin(), search.end(), *it), search.end());
@@ -745,79 +650,9 @@ int Chess::max(int depth, int alpha, int beta)
         if (value > alpha)
         {
             alpha = value;
-            /* cout << "\nmax  " << combine[i].first.x << "," << combine[i].first.y
-           << "   " << combine[i].second.x << "," << combine[i].second.y << "\n";
-            cout << value<<alpha;*/
-         /*   cout << "\nmax  " << combine[i].first.x << "," << combine[i].first.y
-                << "   " << combine[i].second.x << "," << combine[i].second.y << "\n";*/
             if (depth == 2)
                 m_best = combine[i];
         }
     }
-    if (alpha > beta)
-        alpha = beta;
-    cout << "max beta:" << beta;
     return alpha;
-}
-int Chess::min(int depth, int alpha, int beta)
-{
-    //cout << "\n\nmin";
-    std::pair< loc, loc> min;
-    int value;
-    vector<loc>temp;
-    vector<pair<loc, loc>>combine;
-    vector<loc>::iterator it;
-    if (isEnd())
-        return estimate();
-    if (depth == 0)
-        return estimate();
-    Comb(search, combine, search.size());
-   /*   cout << "\n搜索队列：";
-     for (auto e : search)
-         cout << e.x << "," << e.y << "\t";
-     cout << "\n组合：";
-     for (auto e :combine)
-         cout << "(" << e.first.x << "," << e.first.y << "  " << e.second.x << "," << e.second.y << ")\t";*/
-    for (int i = 0; i < combine.size() && alpha < beta; i++)
-    {
-       /* cout << "\nmin  " << combine[i].first.x << "," << combine[i].first.y
-            << "   " << combine[i].second.x << "," << combine[i].second.y << "\n";*/
-        m_last = combine[i].first;
-        m_llast = combine[i].second;
-        set(combine[i].first);
-        //add(combine[i].first, temp);
-        set(combine[i].second);
-        //add(combine[i].second, temp);
-        swap();
-        value = max(depth - 1, alpha, beta);
-        retract(combine[i].first);
-        retract(combine[i].second);
-        /*cout << "\n搜索队列：";
-        for (auto e : search)
-            cout << e.x << "," << e.y << "\t";
-        if (!temp.empty())
-        {
-            for (it = temp.begin(); it != temp.end(); ++it)
-                search.erase(std::remove(search.begin(), search.end(), *it), search.end());
-            temp.clear();
-        }*/
-        if (value < beta)
-        {
-           // cout << endl << endl;;
-            beta = value;
-            /*cout << "beta:" << beta << endl;
-             cout << "\nmin  " << combine[i].first.x << "," << combine[i].first.y
-            << "   " << combine[i].second.x << "," << combine[i].second.y << "\n";
-            cout <<"value:"<< value<<endl;*/
-            if (depth == 2)
-                m_best = combine[i];
-        }
-    }
-    if (alpha > beta)
-        beta = alpha;
-    //cout << "\nmin  " << min.first.x << "," << min.first.y
-    //    << "   " << min.second.x << "," << min.second.y << "\n";
-   /* cout << endl << "返回的alpha: " << alpha << endl;*/
-    //cout <<endl<<"返回的beta: " << beta << endl;
-    return beta;
 }
