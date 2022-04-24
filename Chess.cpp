@@ -13,12 +13,6 @@ int numberOfBlackRoad[7]{ 0 };
 int numberOfWhiteRoad[7]{ 0 };
 int scoreOfBlackRoad[7]{ 0,1,5,10,25,25,10000 };
 int scoreOfWhiteRoad[7]{ 0,1,10,15,35,25,10000 };
-struct HashItem
-{
-    long check;
-    int depth;
-    int value;
-}*hash[1024 * 1024];
 Chess::Chess()
     :m_chess{ 0 }
     , m_player{ 1 }
@@ -80,19 +74,19 @@ Chess::Chess()
 //        }
 {
    
-    std::default_random_engine e(time(0));
-    std::uniform_real_distribution<double> u(0, 1);
-    for (int k = 0; k < 2; k++)
-        for (int i = 0; i < 19; i++)
-            for (int j = 0; j < 19; j++)
-            {
-                m_zobrist_HashKey32[k][i][j] = (int)(u(e) * INT_MAX);
-                //cout << m_zobrist_HashKey32[k][i][j] << endl;
-                m_zobrist_HashKey64[k][i][j] = (long)(u(e) * LONG_MAX);
-                //cout << m_zobrist_HashKey64[k][i][j] << endl;
-            }
-    for (int i = 0; i < 1024 * 1024; i++)
-        hash[i] = nullptr;
+    //std::default_random_engine e(time(0));
+    //std::uniform_real_distribution<double> u(0, 1);
+    //for (int k = 0; k < 2; k++)
+    //    for (int i = 0; i < 19; i++)
+    //        for (int j = 0; j < 19; j++)
+    //        {
+    //            m_zobrist_HashKey32[k][i][j] = (int)(u(e) * INT_MAX);
+    //            //cout << m_zobrist_HashKey32[k][i][j] << endl;
+    //            m_zobrist_HashKey64[k][i][j] = (long)(u(e) * LONG_MAX);
+    //            //cout << m_zobrist_HashKey64[k][i][j] << endl;
+    //        }
+    //for (int i = 0; i < 1024 * 1024; i++)
+    //    hash[i] = nullptr;
 }
 //棋盘绘制
 void Chess::draw()
@@ -332,7 +326,7 @@ void Chess::hashKey()
         }
 }
 //查询hash表
-bool Chess::hashCheck()
+/*bool Chess::hashCheck()
 {
     hashKey();
     int index = m_HashKey32 & 0xFFFFF;
@@ -341,25 +335,25 @@ bool Chess::hashCheck()
     else
         return false;
        
-}
+}*/
 //更新hash表
-void Chess::hashUpdate(int value)
-{
-    hashKey();
-    int index = m_HashKey32 & 0xFFFFF;
-    if (!hash[index])
-    {
-        hash[index] = new HashItem();
-        hash[index]->check = m_HashKey64;
-        hash[index]->depth = m_depth - MAX_DEPTH;
-        hash[index]->value = value;
-    }
-    else
-    {
-        if(hash[index]->check == m_HashKey64&& hash[index]->depth < m_depth - MAX_DEPTH)
-            hash[index]->value = value;
-    }
-}
+//void Chess::hashUpdate(int value)
+//{
+//    hashKey();
+//    int index = m_HashKey32 & 0xFFFFF;
+//    if (!hash[index])
+//    {
+//        hash[index] = new HashItem();
+//        hash[index]->check = m_HashKey64;
+//        hash[index]->depth = m_depth - MAX_DEPTH;
+//        hash[index]->value = value;
+//    }
+//    else
+//    {
+//        if(hash[index]->check == m_HashKey64&& hash[index]->depth < m_depth - MAX_DEPTH)
+//            hash[index]->value = value;
+//    }
+//}
 //落子
 void Chess::set(struct loc location)
 {
@@ -696,8 +690,8 @@ int Chess::negamax(int depth, int alpha, int beta)
     vector<pair<loc, loc>>combine;
     vector<loc>temp;
     vector<loc>::iterator it;
-    if (hashCheck())
-        return hash[m_HashKey32]->value;
+   /* if (hashCheck())
+        return hash[m_HashKey32]->value;*/
     if (isEnd())
         return estimate();
     if (depth == 0)
@@ -716,11 +710,16 @@ int Chess::negamax(int depth, int alpha, int beta)
             add(combine[i].second, temp);
         }
         swap();
-        value = -negamax(depth - 1, -beta, -alpha);
-        hashUpdate(value);
+        if(i==0)
+            value = -negamax(depth - 1, -beta, -alpha);
+        else
+            value= -negamax(depth - 1,-alpha-1, -alpha);
+        if(i!=0&&alpha<value&&value<beta)
+            value = -negamax(depth - 1, -beta, -value);
+       // hashUpdate(value);
         retract(combine[i].first);
         retract(combine[i].second);
-        m_depth--;
+       // m_depth--;
         if (!temp.empty()&&depth!=1)
         {
             for (it = temp.begin(); it != temp.end(); ++it)

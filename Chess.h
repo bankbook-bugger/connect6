@@ -8,6 +8,7 @@
 
 #define MAX 32767
 #define MAX_DEPTH 2
+enum class Type{ Empty, Exact, Alpha, Beta };
 struct loc
 {
 public:
@@ -20,6 +21,15 @@ public:
 		return false;
 	}
 };//Œª÷√–≈œ¢
+
+struct HashItem
+{
+	long check;
+	int depth;
+	int value;
+	Type hashf;
+
+};
 class Chess
 {
 public:
